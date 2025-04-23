@@ -14,4 +14,9 @@ ALTER TABLE products ALTER COLUMN id SET NOT NULL;
 
 insert into products (name, description, price, type, active) VALUES ('Lenovo Laptop', 'laptop looking awesome look with affordiable price', 45000, 'fragile', true);
 
+create table orders(id SERIAL primary key, total_price integer, status varchar(20));
+
+insert into orders (total_price, status) VALUES (20000, 'created');
+
+create table products_orders(id SERIAL primary key, order_id integer, product_id integer, constraint products_orders_order_id foreign key(order_id) references orders(id), constraint products_orders_product_id foreign key(product_id) references products(id));
 
