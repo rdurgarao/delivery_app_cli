@@ -15,6 +15,9 @@ class PGDatabase:
     def get_latest_fetch(self):
         return self.cur.fetchone()[0]
 
+    def commit_changes(self):
+        self.conn.commit()
+
     def close_connections(self):
         self.conn.commit()
         self.cur.close()
@@ -46,14 +49,17 @@ class Orders:
             "INSERT INTO orders (total_price, status) VALUES (%s, %s) RETURNING id;",
             (order_total_price, 'created'))
         order_id = db.get_latest_fetch()
-        db.close_connections()
         self.id = order_id
+        db.commit_changes()
 
         for pid in self.product_ids:
             product = Product.find(pid)
             order_total_price = order_total_price + product.price
             new_product_order = ProductOrders()
             new_product_order.create(product.id, self.id)
+
+        db.execute("UPDATE orders set total_price=%s where id=%s", (order_total_price, self.id))
+        db.close_connections()
 
 
 class Product:
@@ -82,12 +88,12 @@ class Product:
         db.close_connections()
         self.id = product_id
 
-    def fetch_product_from_db(self):
-        db = PGDatabase()
-        db.execute("select * from products where id = %s;", (self.id,))
-        res = db.cur.fetchall()
-        print(res)
-        db.close_connections()
+    # def fetch_product_from_db(self):
+    #     db = PGDatabase()
+    #     db.execute("select * from products where id = %s;", (self.id,))
+    #     res = db.cur.fetchall()
+    #     print(res)
+    #     db.close_connections()
 
     @classmethod
     def find(cls, id):
@@ -114,11 +120,17 @@ def generate_products(size=100):
 
     return products
 
-products = generate_products(20)
+products = generate_products(30)
 for product in products:
     product.write_to_db()
-    product.fetch_product_from_db()
+    # product.fetch_product_from_db()
 
-# for i in range(100):
-o = Orders(None, [2,3,12])
-o.create()
+pids = [product.id for product in products]
+
+for i in range(100):
+    order_size = random.randint(1, int(len(pids) / 4))
+    random.shuffle(pids)
+    o = Orders(None, pids[0:order_size])
+    o.create()
+
+print("data generated successfully")
