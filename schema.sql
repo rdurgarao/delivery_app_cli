@@ -20,7 +20,7 @@ insert into orders (total_price, status) VALUES (20000, 'created');
 
 create table products_orders(id SERIAL primary key, order_id integer, product_id integer, constraint products_orders_order_id foreign key(order_id) references orders(id), constraint products_orders_product_id foreign key(product_id) references products(id));
 
-ALTER TABLE orders ADD COLUMN otp integer;
+
 
 --truncate orders cascade;
 --truncate products cascade;

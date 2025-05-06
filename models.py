@@ -4,9 +4,10 @@ import os
 
 DATABASE_NAME = 'delivery_app'
 
+
 class PGDatabase:
     def __init__(self):
-        self.conn = psycopg2.connect(f"dbname={DATABASE_NAME} user=postgres port=5435")
+        self.conn = psycopg2.connect(f"dbname={DATABASE_NAME} user=postgres port=5432 password=Gouse@1725")
         self.cur = self.conn.cursor()
 
     def execute(self, sql, vargs):
@@ -23,6 +24,7 @@ class PGDatabase:
         self.cur.close()
         self.conn.close()
 
+
 class ProductOrders:
     def create(self, product_id, order_id):
         self.product_id = product_id
@@ -34,6 +36,7 @@ class ProductOrders:
         po_id = db.get_latest_fetch()
         db.close_connections()
         self.id = po_id
+
 
 class Orders:
     def __init__(self, id, product_ids, status='created'):
@@ -65,10 +68,51 @@ class Orders:
         else:
             return False
 
-
-    def update_order_shipment(self,otp ):
+    @classmethod
+    def all_delivered_orders(cls):
         db = PGDatabase()
-        db.execute("UPDATE orders set status='shipped', otp=%s where id=%s", [otp,self.id])
+        db.execute("SELECT * FROM orders WHERE status='delivered'", [])
+        res = db.cur.fetchall()
+        db.close_connections()
+
+        orders = []
+        for row in res:
+            order = Orders(id=row[0], product_ids=[], status=row[2])
+            order.total_price = row[1]
+            orders.append(order)
+        return orders
+
+    @classmethod
+    def all_shipped_orders(cls):
+        db = PGDatabase()
+        db.execute("select * from orders where status='shipped'", [])
+        res = db.cur.fetchall()
+        db.close_connections()
+
+        orders = []
+        for row in res:
+            order = Orders(id=row[0], product_ids=[], status=row[2])
+            order.total_price = row[1]
+            orders.append(order)
+        return orders
+
+    @classmethod
+    def orders_created_details(cls):
+        db = PGDatabase()
+        db.execute("select * from orders where status='created'", [])
+        res = db.cur.fetchall()
+        db.close_connections()
+
+        orders = []
+        for row in res:
+            order = Orders(id=row[0], product_ids=[], status=row[2])
+            order.total_price = row[1]
+            orders.append(order)
+        return orders
+
+    def update_order_shipment(self, otp):
+        db = PGDatabase()
+        db.execute("UPDATE orders set status='shipped', otp=%s where id=%s", [otp, self.id])
         db.close_connections()
 
     def create_qr(self, url):
@@ -100,6 +144,7 @@ class Orders:
         db.execute("UPDATE orders set total_price=%s where id=%s", (order_total_price, self.id))
         db.close_connections()
 
+
 class Product:
     def __init__(self, id, name, description, price, active=True, specs=None, type="Non Fr"):
         self.name = name
@@ -121,7 +166,9 @@ class Product:
 
     def write_to_db(self):
         db = PGDatabase()
-        db.execute("INSERT INTO products (name, description, price, type, active) VALUES (%s, %s, %s, %s, %s) RETURNING id;", (self.name[:10], self.description, self.price, self.type, self.active))
+        db.execute(
+            "INSERT INTO products (name, description, price, type, active) VALUES (%s, %s, %s, %s, %s) RETURNING id;",
+            (self.name[:10], self.description, self.price, self.type, self.active))
         product_id = db.get_latest_fetch()
         db.close_connections()
         self.id = product_id

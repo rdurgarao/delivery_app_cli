@@ -5,12 +5,16 @@ from urllib.parse import urlparse, parse_qs
 from models import Orders
 import random
 
-BASE_URL = 'https://a0cc-223-185-48-233.ngrok-free.app/'
+BASE_URL = '  https://16b6-2409-40f0-1049-3476-1427-8c6a-2e9e-2ded.ngrok-free.app/'
+
 
 class MyHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         valid_ship_path = re.search("\/orders\/ship\?oid=\d+", self.path)
         valid_deliver_path = re.search("\/orders\/verify\?oid=\d+&otp=\d+", self.path)
+        valid_all_delivered_path = re.search("\/orders\/delivered\/", self.path)
+        valid_all_shipped_path = re.search("\/orders\/shipped\/", self.path)
+        valid_all_created_path = re.search("\/orders\/created\/",self.path)
 
         if valid_ship_path:
             parsed_url = urlparse(self.path)
@@ -57,11 +61,51 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
                 self.send_header('Content-type', 'text/plain')
                 self.end_headers()
                 self.wfile.write(b"Not found")
+
+        elif valid_all_delivered_path:
+            delivered_orders = Orders.all_delivered_orders()
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            if delivered_orders:
+                for order in delivered_orders:
+                    self.wfile.write(
+                        f"Order ID: {order.id}, Total Price: {order.total_price}, Status: {order.status}\n".encode())
+            else:
+                self.wfile.write(b"No delivered orders found.")
+
+        elif valid_all_shipped_path:
+            shipped_orders = Orders.all_shipped_orders()
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            if shipped_orders:
+                for order in shipped_orders:
+                    self.wfile.write(
+                        f"Order ID: {order.id}, Total Price: {order.total_price}, Status: {order.status}\n".encode())
+            else:
+                self.wfile.write(b"no shipped orders found")
+
+        elif valid_all_created_path:
+            all_created_orders = Orders.orders_created_details()
+            self.send_response(200)
+            self.send_header("Content-type","text/plain")
+            self.end_headers()
+            if all_created_orders:
+                for order in all_created_orders:
+                    self.wfile.write(
+                        f"order_id :{order.id}, Total_price: {order.total_price}, status : {order.status}".encode())
+            else:
+                self.wfile.write(b"No orders created")
         else:
             self.send_response(404)
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
             self.wfile.write(b"Not found")
+
+
+
+
 
 PORT = 8000
 

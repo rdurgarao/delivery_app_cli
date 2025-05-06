@@ -2,6 +2,7 @@ from faker import Faker
 import random
 from models import Product, Orders
 
+
 def generate_products(size=100):
     products = []
     for n in range(size):
@@ -11,6 +12,7 @@ def generate_products(size=100):
         products.append(new_product)
 
     return products
+
 
 products = generate_products(30)
 for product in products:
